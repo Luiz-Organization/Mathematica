@@ -1,10 +1,10 @@
 (* ::Package:: *)
 
-(* ::Section:: *)
+(* ::Section::Closed:: *)
 (*Reading Packages*)
 
 
-(* ::Subsection:: *)
+(* ::Subsection::Closed:: *)
 (*Pacakges*)
 
 
@@ -15,7 +15,8 @@ ip="192.168.0.13";
 SetDirectory@mrtFileDirectory[];
 SetSystemOptions["DataOptions"->"ReturnQuantities"->False];
 
-(* ::Subsection:: *)
+
+(* ::Subsection::Closed:: *)
 (*Auxiliar Functions*)
 
 
@@ -72,11 +73,11 @@ maGetDep[]:=Module[{sql,r,conn=marcheConn["192.168.0.13"],rule,noProd,title,grid
 ]
 
 
-(* ::Section:: *)
+(* ::Section::Closed:: *)
 (*Get Data Functions*)
 
 
-(* ::Subsection:: *)
+(* ::Subsection::Closed:: *)
 (*Get Data Venda Loja*)
 
 
@@ -106,33 +107,30 @@ getVendaLoja[codLoja_List,{dtIni_,dtFim_}]:=Module[{sql,r,conn=marcheConn[ip],ta
 	r["Eventos"]=Flatten@Lookup[$eventosLoja,codLoja,{}];
 	r
 ]
-r\[LeftArrow]getVendaLoja[{},{{2012,1,1},{2014,8,31}}]
-r["Data"]//Length
+(*r\[LeftArrow]getVendaLoja[$lojasMe14,{{2012,1,1},{2014,8,31}}]*)
+(*r["Data"]*)
 
-Print(r("Eventos"))
-
-(*r\[LeftArrow]getVendaLoja[{18},{{2012,6,1},{2014,8,31}}]*)
+(*r\[LeftArrow]getVendaLoja[{18},{{2012,1,1},{2014,8,31}}]*)
 (*r["Eventos"]*)
 
 
-
-(* ::Subsection:: *)
+(* ::Subsection::Closed:: *)
 (*Get Data Venda Departamento*)
 
 
-getVendaDep[codDep_List,codLoja_List,{dtIni_,dtFim_}]:=Module[{sql,r,conn=marcheConn[ip],tab},
+getVendaDep[codDep_Integer,codLoja_List,{dtIni_,dtFim_}]:=Module[{sql,r,conn=marcheConn[ip],tab},
 
 	sql="
 
 		SELECT Max(data) as AnoMes
-			  ,Sum([QTD_VENDA]) as Ticket --**QTDPROD
+			  ,Sum([QTD_VENDA]) as Ticket
 			  ,Sum([VLR_VENDA]) as Valor
 			  ,isnull(Sum([VLR_VENDA])/nullif(Sum([QTD_VENDA]),0),0) as TM
 		FROM [BI].[dbo].[BI_VENDA_GRUPO]
 		where 1=1
 		and DATA between CONVERT(date,`1`) and CONVERT(date,`2`)
-		"<>mrtSQLIn["and cod_departamento in",codDep/. {0}->{}]<>"
-		"<>mrtSQLIn["and cod_loja in",codLoja/. {0}->{}]<>"
+		and cod_departamento = `3`
+		"<>mrtSQLIn["and cod_loja in",codLoja]<>"
 		group by datePart(year,[DATA]), datePart(month,[DATA])
 		order by AnoMes
 	";
@@ -151,63 +149,19 @@ getVendaDep[codDep_List,codLoja_List,{dtIni_,dtFim_}]:=Module[{sql,r,conn=marche
 				];
 	r
 ]
-r\[LeftArrow]getVendaDep[{1},{},{{2012,1,1},{2014,8,31}}];
-(*r["Data"]*)
-r["Data"]//Length
+(*r\[LeftArrow]getVendaDep[5,{7},{{2012,1,1},{2014,8,31}}];*)
+(*r["Data"];*)
 
 
-(* ::Subsection:: *)
-(*Get Data Venda Departamento 2*)
-
-
-getVendaDep2[codDep_List,codLoja_List,{dtIni_,dtFim_}]:=Module[{sql,r,conn=marcheConn[ip],tab},
-
-	sql="
-              SELECT Max(data) as AnoMes
-                    ,Sum([QTD_CUPOM]) as Ticket
-	                ,Sum([VLR_VENDA]) as Valor
-					,isnull(Sum([VLR_VENDA])/nullif(Sum([QTD_CUPOM]),0),0) as TM
-                 FROM [BI].[dbo].[BI_VENDA_DEPARTAMENTO]		
-                 where 1=1
-				and DATA between CONVERT(date,`1`) and CONVERT(date,`2`)
-				"<>mrtSQLIn["and cod_departamento in",codDep/. {0}->{}]<>"
-				"<>mrtSQLIn["and cod_loja in",codLoja/. {0}->{}]<>"
-				group by datePart(year,[DATA]), datePart(month,[DATA])
-				order by AnoMes
-	";
-	
-	r\[LeftArrow]mrtSQLDataObject[conn,sql,{SQLDateTime@dtIni,SQLDateTime@dtFim,codDep}];
-	r["Data"][[All,r."AnoMes"]]=FromDigits/@Query[;;2]@StringSplit[#,"-"]&/@r["Data"][[All,r."AnoMes"]];
-	r["Data"]=Select[r,#[["Ticket"]]>1000&];
-	r["DtIni"]=dtIni;
-	r["DtFim"]=dtFim;
-	r["DtRange"]={dtIni,dtFim};
-	r["CodDep"]=codDep;
-	r["NoLoja"]=codDep/.$dep;
-	r["Eventos"]=If[  Length@codLoja==1
-					,Flatten@Lookup[$eventosLoja,First@codLoja,{}]
-					,{}
-				];
-	r
-]
-r\[LeftArrow]getVendaDep2[{1},{},{{2012,1,1},{2014,8,31}}];
-r["Data"]//Length
-
-
-(* ::Input:: *)
-(*r[0]*)
-
-
-(* ::Section:: *)
+(* ::Section::Closed:: *)
 (*Loading Data*)
 
 
-(* ::Subsection:: *)
+(* ::Subsection::Closed:: *)
 (*Definitions*)
 
 
 $dep=maGetDep[];
-$dep = Prepend[$dep, 0-> "TODOS"];
 
 
 (*Eventos*)
@@ -230,7 +184,8 @@ $eventosGlobal={
 
 (*$infoLojas=1*)(*Select[x,Abs@DateDifference[#\[LeftDoubleBracket]"DtaAbertura"\[RightDoubleBracket]]\[LessEqual] 365&]\[LeftDoubleBracket]All,2\[RightDoubleBracket]*)
 $lojas=KeyDrop[8]@marcheGetDeParaLojas[];
-$lojas = Prepend[$lojas,0-> "Grupo"];
+$lojas = Append[$lojas,0-> "Grupo"];
+
 
 $lojasInfo=KeyDrop[8]@marcheInfoLoja[];
 
@@ -238,12 +193,12 @@ $lojasMa14=Keys@Select[$lojasInfo,Abs@DateDifference[#[["DtaAbertura"]]]>14*31&]
 $lojasMe14=Keys@Select[$lojasInfo,Abs@DateDifference[#[["DtaAbertura"]]]<=14*31&];
 
 
-(* ::Subsection:: *)
+(* ::Subsection::Closed:: *)
 (*Loading*)
 
 
-$dataDepMa14=AssociationMap[(PrintTemporary@#;getVendaDep[{#},$lojasMa14,{{2012,1,1},{2014,8,31}}])&,(*Query[;;3]@*)Keys@KeyDrop[$dep, 0]];
-$dataDepMe14=AssociationMap[(PrintTemporary@#;getVendaDep[{#},$lojasMe14,{{2012,1,1},{2014,8,31}}])&,(*Query[;;3]@*)Keys@KeyDrop[$dep, 0]];
+$dataDepMa14=AssociationMap[(PrintTemporary@#;getVendaDep[#,$lojasMa14,{{2012,1,1},{2014,8,31}}])&,(*Query[;;3]@*)Keys@$dep];
+$dataDepMe14=AssociationMap[(PrintTemporary@#;getVendaDep[#,$lojasMe14,{{2012,1,1},{2014,8,31}}])&,(*Query[;;3]@*)Keys@$dep];
 
 
 $dataLoja=AssociationMap[(PrintTemporary@#;getVendaLoja[{#},{{2012,1,1},{2014,8,31}}])&,(*Query[;;3]@*)Keys@$lojas];
@@ -253,28 +208,11 @@ $dataLojasMa14=getVendaLoja[$lojasMa14,{{2012,1,1},{2014,8,31}}];
 $dataLojasMe14=getVendaLoja[$lojasMe14,{{2012,1,1},{2014,8,31}}];
 
 
-$dataDep2Ma14=AssociationMap[(PrintTemporary@#;getVendaDep2[{#},$lojasMa14,{{2012,1,1},{2014,8,31}}])&,(*Query[;;3]@*)Keys@$dep];
-$dataDep2Me14=AssociationMap[(PrintTemporary@#;getVendaDep2[{#},$dataDepMe14,{{2012,1,1},{2014,8,31}}])&,(*Query[;;3]@*)Keys@$dep];
-
-
-$dataDep2=AssociationMap[(PrintTemporary@#;getVendaDep2[{#},{},{{2012,1,1},{2014,8,31}}])&,(*Query[;;3]@*)Keys@$dep];
-
-
-(* ::Input:: *)
-(**)
-(*$dataLoja[0]*)
-
-
-(* ::Input:: *)
-(**)
-(*$dataDep2[0]*)
-
-
 (* ::Section:: *)
 (*Report Parts*)
 
 
-(* ::Subsection:: *)
+(* ::Subsection::Closed:: *)
 (*Plot Absolute Values*)
 
 
@@ -302,7 +240,7 @@ plotLagAbs[data_Symbol,field_String]:=Module[{r,ts,ts12,downTicks},
 (*plotLagAbs[r,"Valor"]*)
 
 
-(* ::Subsection:: *)
+(* ::Subsection::Closed:: *)
 (*Plot Comparativo 12m*)
 
 
@@ -324,7 +262,7 @@ colorLag12[_]=Which[
 
 Options[plotLag12Perc]={"StartDate"-> Automatic};
 
-plotLag12Perc[data_Symbol,field_String,opts:OptionsPattern[{plotLag12Perc}]]:=Module[{r,ts,startDate,label,growthMedian,ticksDown,ticksUp(*,eventos*),eventoName},
+plotLag12Perc[data_Symbol,field_String,opts:OptionsPattern[{plotLag12Perc}]]:=Module[{r,ts,startDate,label,growthMedian,ticksDown,ticksUp,eventos,eventoName},
 	startDate=OptionValue["StartDate"]/.Automatic->r["DtIni"];
 	r\[LeftArrow]data;
 	ts=TimeSeriesShift[#,{15,"Day"}]&@lagCompare[r,"AnoMes",field,12]["Data"];
@@ -385,7 +323,7 @@ plotReport[r,"Ticket"]
 plotReport[r,"TM"]*)
 
 
-(* ::Subsection:: *)
+(* ::Subsection::Closed:: *)
 (*Plot Comparativo 01m*)
 
 
@@ -504,22 +442,22 @@ reportLoja[field:("Valor"|"Ticket"|"TM")]:=Module[{rMe14,rMa14,rGrupo,rGrupoMe14
 
 	(*maReportFrame[Style["\nVis\[ATilde]o Crescimento "<>field<>"\n",15,$titleStyle],Grid[{{rMa14},{},{rMe14}}]]*)
 
-] 
+]
 
-(*reportLoja["Valor"]*)
-(*reportLoja["Ticket"]*)
-(*reportLoja["TM"]*)
+reportLoja["Valor"]
+reportLoja["Ticket"]
+reportLoja["TM"]
 
 
-(* ::Subsection:: *)
+(* ::Subsection::Closed:: *)
 (*Departamento*)
 
 
 ClearAll@reportDep;
 reportDep[field:("Valor"|"Ticket"|"TM")]:=Module[{rMe14,rMa14,plotsMa14,plotsMe14,title},
 
-	plotsMa14=plotLag12Perc[$dataDepMa14[#],field,"StartDate"-> {2013,1,1}]&/@Keys@KeyDrop[$dep, 0];
-	plotsMe14=plotLag01Perc[$dataDepMe14[#],field,"StartDate"-> {2013,1,1}]&/@Keys@KeyDrop[$dep, 0];
+	plotsMa14=plotLag12Perc[$dataDepMa14[#],field,"StartDate"-> {2013,1,1}]&/@Keys@$dep;
+	plotsMe14=plotLag01Perc[$dataDepMe14[#],field,"StartDate"-> {2013,1,1}]&/@Keys@$dep;
 
 	rMa14=maReportFrame[
 		Style["YoY por Dep Lojas +14 meses\n",$titleStyle]
@@ -537,90 +475,38 @@ reportDep[field:("Valor"|"Ticket"|"TM")]:=Module[{rMe14,rMa14,plotsMa14,plotsMe1
 
 ]
 
-rep[1]=reportDep["Valor"]
+(*rep[1]=reportDep["Valor"]*)
 (*rep[2]=reportDep["Ticket"]*)
 (*rep[3]=reportDep["TM"]*)
 
 
-(* ::Subsection:: *)
-(*Departamento 2*)
+(* ::Subsection::Closed:: *)
+(*Export*)
 
 
-
-ClearAll@reportDep2;
-reportDep2[field:("Valor"|"Ticket"|"TM")]:=Module[{r2Me14,r2Ma14,rGeral,plots2Ma14,plots2Me14,plotsGeral,title},
-
-	plots2Ma14=plotLag12Perc[$dataDep2Ma14[#],field,"StartDate"-> {2013,1,1}]&/@Keys@KeyDrop[$dep, 0];
-	plots2Me14=plotLag01Perc[$dataDep2Me14[#],field,"StartDate"-> {2013,1,1}]&/@Keys@KeyDrop[$dep, 0];
-	plotsGeral=plotLag12Perc[$dataDep2[0],field,"StartDate"-> {2013,1,1}]
-
-	r2Ma14=maReportFrame[
-		Style["YoY por Dep Lojas +14 meses\n",$titleStyle]
-		,Grid[Partition[plots2Ma14,2,2,1,Null],Spacings->0]
-	];
-	
-	rGeral=maReportFrame[
-		Style["Grupo\n",$titleStyle],plotsGeral
-	];	
-	
-	r2Me14=maReportFrame[
-		Style["YoY por Dep Lojas +14 meses\n",$titleStyle]
-		,Grid[Partition[plots2Me14,2,2,1,Null],Spacings->0]
-	];
-
-	title=Style["\nVis\[ATilde]o Crescimento "<>field<>"\n",15,$titleStyle];
-
-	maReportFrame[title
-				,Grid[{
-					{rGeral}
-				 (*,{rGrupoMa14,rGrupoMe14}*)
-				   ,{r2Ma14}
-				   ,{r2Me14}
-				}]]
-
-]
-
-rep[1]=reportDep2["Valor"]
-(*rep[2]=reportDep["Ticket"]*)
-(*rep[3]=reportDep["TM"]*)
-
-
-
-(* ::Input:: *)
-(**)
-(*plotLag12Perc[$dataDep2Ma14[#],"Valor","StartDate"-> {2013,1,1}]&/@Keys@KeyDrop[$dep, 0]*)
-
-
-(* ::Input:: *)
-(*.*)
-
-
-(* ::Code:: *)
 (*Scan[Export[#<>".png",reportLoja[#],ImageResolution-> 150]&,{"Valor","Ticket","TM"}]*)
 
 
 (* ::Input:: *)
-(*$InstallationDirectory/SystemFiles/FrontEnd/TextResources/Macintosh/KeyEventTranslations.tr*)
+(**)
 
 
-(* ::Section:: *)
+(* ::Section::Closed:: *)
 (*Test*)
 
 
-(* ::Code:: *)
 (*plotReport[r,"Valor"]*)
 (*plotReport[r,"Ticket"]*)
 (*plotReport[r,"TM"]*)
 
 
-(* ::Code:: *)
 (*(*$dataLoja=AssociationMap[(PrintTemporary@#;getVendaLoja[#,{{2012,1,1},{2014,8,31}}])&,(*Query[;;3]@*)Keys@$lojas];*)*)
 (*reportLoja["Valor"]*)
 (*reportLoja["Ticket"]*)
 (*reportLoja["TM"]*)
 
 
-(* ::Section:: *)
+(* ::Section::Closed:: *)
 (*Notas*)
 
 
